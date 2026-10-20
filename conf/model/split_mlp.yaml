@@ -1,0 +1,9 @@
+# SB3 default: separate actor and critic MLPs (no shared parameters).
+name: split_mlp
+algo: ppo
+policy: MlpPolicy
+frame_stack: 0
+ppo_overrides: {}
+policy_kwargs:
+  net_arch: {pi: [64, 64], vf: [64, 64]}
+  activation_fn: tanh

@@ -1,0 +1,6 @@
+defaults:
+  - lstm_shared
+  - _self_
+name: gru_shared
+policy_kwargs:
+  rnn_type: gru

@@ -1,0 +1,13 @@
+# Transformer encoder over the last 8 observations; separate encoders for actor and critic.
+name: transformer
+algo: ppo
+policy: MlpPolicy
+frame_stack: 8
+ppo_overrides: {}
+policy_kwargs:
+  features_extractor_class: transformer
+  features_extractor_kwargs: {d_model: 64, n_heads: 4, n_layers: 2, dim_feedforward: 128}
+  share_features_extractor: false
+  net_arch: {pi: [64], vf: [64]}
+  activation_fn: tanh
+  ortho_init: false

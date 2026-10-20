@@ -1,0 +1,11 @@
+# One MLP trunk shared by actor and critic, linear heads on top (net_arch: []).
+name: shared_mlp
+algo: ppo
+policy: MlpPolicy
+frame_stack: 0
+ppo_overrides: {}
+policy_kwargs:
+  features_extractor_class: mlp_trunk
+  features_extractor_kwargs: {hidden_sizes: [64, 64], activation: tanh}
+  share_features_extractor: true
+  net_arch: []

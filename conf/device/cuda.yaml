@@ -1,0 +1,4 @@
+name: cuda
+train_device: cuda
+rollout_device: cuda
+strategy: null

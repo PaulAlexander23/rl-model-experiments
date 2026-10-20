@@ -1,0 +1,7 @@
+# sb3-contrib's shared_lstm: the critic reads the LSTM output but its gradient is detached.
+defaults:
+  - lstm_shared
+  - _self_
+name: lstm_shared_detached
+policy_kwargs:
+  shared_rnn_grad: false

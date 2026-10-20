@@ -1,0 +1,6 @@
+defaults:
+  - pendulum
+  - _self_
+name: pendulum_novel
+mask_velocity: true
+total_timesteps: 300_000

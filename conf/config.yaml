@@ -1,0 +1,21 @@
+defaults:
+  - env: cartpole
+  - model: split_mlp
+  - device: cpu
+  - _self_
+  - optional experiment: null
+
+experiment: adhoc
+seed: 0
+# Threads per run. Keep at 1 for parallel sweeps (one run per core); raise for single timing runs.
+torch_threads: 1
+eval_episodes: 20
+
+hydra:
+  run:
+    dir: runs/${experiment}/${now:%Y-%m-%d_%H-%M-%S}_${env.name}_${model.name}_${device.name}_s${seed}
+  sweep:
+    dir: multirun/${experiment}
+    subdir: ${env.name}/${model.name}/${device.name}/s${seed}
+  job:
+    chdir: false

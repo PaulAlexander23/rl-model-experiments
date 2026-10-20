@@ -1,0 +1,5 @@
+# Rollouts on CPU, PPO update on GPU; policy + Adam state moved each iteration.
+name: hybrid_move
+train_device: cuda
+rollout_device: cpu
+strategy: move

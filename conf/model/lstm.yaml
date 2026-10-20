@@ -1,0 +1,17 @@
+# RecurrentPPO with separate actor and critic LSTMs (sb3-contrib default).
+name: lstm
+algo: recurrent_ppo
+policy: RecurrentPolicy
+frame_stack: 0
+ppo_overrides: {}
+policy_kwargs:
+  rnn_type: lstm
+  lstm_hidden_size: 64
+  n_lstm_layers: 1
+  enable_critic_lstm: true
+  shared_lstm: false
+  shared_rnn_grad: false
+  fast_sequence: true
+  net_arch: {pi: [64], vf: [64]}
+  activation_fn: tanh
+  ortho_init: false

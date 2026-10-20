@@ -1,0 +1,9 @@
+# One LSTM for actor and critic; the value loss also trains it.
+defaults:
+  - lstm
+  - _self_
+name: lstm_shared
+policy_kwargs:
+  enable_critic_lstm: false
+  shared_lstm: true
+  shared_rnn_grad: true

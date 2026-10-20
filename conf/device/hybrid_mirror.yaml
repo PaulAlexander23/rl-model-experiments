@@ -1,0 +1,5 @@
+# Rollouts on a CPU copy of the policy (weights synced each iteration), PPO update on GPU.
+name: hybrid_mirror
+train_device: cuda
+rollout_device: cpu
+strategy: mirror

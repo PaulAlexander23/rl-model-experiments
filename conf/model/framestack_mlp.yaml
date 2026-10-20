@@ -1,0 +1,6 @@
+# Memory baseline without recurrence: split MLP over the last 8 observations.
+defaults:
+  - split_mlp
+  - _self_
+name: framestack_mlp
+frame_stack: 8

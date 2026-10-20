@@ -1,0 +1,4 @@
+name: cpu
+train_device: cpu
+rollout_device: cpu
+strategy: null

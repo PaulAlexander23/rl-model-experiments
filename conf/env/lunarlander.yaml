@@ -1,0 +1,12 @@
+name: lunarlander
+id: LunarLander-v3
+mask_velocity: false
+n_envs: 16
+total_timesteps: 1_000_000
+ppo:
+  n_steps: 1024
+  batch_size: 64
+  gae_lambda: 0.98
+  gamma: 0.999
+  n_epochs: 4
+  ent_coef: 0.01
