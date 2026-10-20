@@ -29,6 +29,7 @@ COLORS = {
     "transformer": SLOTS[1],
     "lstm": SLOTS[2],
     "gru": SLOTS[3],
+    "transformer_lr3e4": SLOTS[4],
     "cpu": SLOTS[0],
     "cuda": SLOTS[1],
     "hybrid_move": SLOTS[2],
@@ -265,6 +266,16 @@ def e4(df: pd.DataFrame) -> str:
     return f"![E4 MLP](e4_eval_mlp.png)\n\n![E4 RNN](e4_eval_rnn.png)\n\n{table}\n"
 
 
+def e5(df: pd.DataFrame) -> str:
+    """Transformer at lr=3e-4 against the E2 runs (transformer at 1e-3, GRU as the RNN reference)."""
+    e2_runs = load_runs("e2_memory")
+    keep = (e2_runs["env"] == "pendulum_novel") & e2_runs["model"].isin(["transformer", "gru"])
+    df = add_auc(pd.concat([df, e2_runs.loc[keep]], ignore_index=True))
+    plot_curves(df, ["pendulum_novel"], ["transformer", "transformer_lr3e4", "gru"], RESULTS / "e5_curves.png")
+    table = summary_table(df, ["env", "model"], {"eval_mean": "final eval", "auc": "mean train return (AUC)"})
+    return f"![E5 curves](e5_curves.png)\n\n{table}\n"
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("experiment")
@@ -277,6 +288,8 @@ def main() -> None:
         body = e2(df)
     elif args.experiment.startswith("e4"):
         body = e4(df)
+    elif args.experiment.startswith("e5"):
+        body = e5(df)
     else:
         body = e3(df, args.experiment)
     out = RESULTS / f"{args.experiment}.md"

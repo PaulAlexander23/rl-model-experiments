@@ -6,8 +6,9 @@ Background and experimental design: [background.md](background.md). Generated ta
 
 **Caveats.** Seeds are few (3–5), budgets are rl-zoo-sized rather than tuned per architecture, and
 "final eval" is 20 deterministic episodes. Treat differences inside one standard deviation as noise.
-The timing experiments (E3) are single runs, but most of the effects are 2–15× and well beyond run-to-run
-jitter (about 5 %).
+The timing experiments (E3) are single runs. I didn't measure run-to-run timing noise, so only the
+large effects (2–15×) should be read as conclusive; gaps of a few percent (for example `move` vs `mirror`)
+are not.
 
 ## TL;DR
 
@@ -19,8 +20,10 @@ jitter (about 5 %).
    fix it. See [E4](#e4-why-do-shared-parameters-fail).
 2. **Memory.** On CartPole-NoVel a plain 8-frame stack (MLP or transformer) solves the task every time,
    more reliably than LSTM/GRU within 200k steps. On Pendulum-NoVel the RNNs (GRU −234, LSTM −255) beat
-   the frame stack (−326) and the transformer collapsed. **Truly shared RNNs collapse on CartPole-NoVel**
-   (13 and 46, worse than no memory at all), while sb3-contrib's *detached* sharing works (472).
+   the frame stack (−326). The transformer collapsed mid-training, and lowering its lr to 3e-4 only
+   partly fixed that. **Truly shared RNNs collapse on CartPole-NoVel** (13 and 46, worse than no
+   memory), while sb3-contrib's *detached* sharing works (472). As with MLPs, reward normalisation
+   fixes the shared RNNs (500).
 3. **GPU vs CPU.** For rl-zoo-sized MLPs (64×64, batch 64) the **CPU is fastest**. The GPU pays roughly 16 s
    of kernel-launch overhead per 100k LunarLander steps whatever the width, and rollouts are slower too.
    The GPU wins in the update phase once networks are wide (256+) *and* minibatches are large (1024),
@@ -91,8 +94,8 @@ jitter (about 5 %).
   which also has one bad seed. The RNNs learn more slowly but more stably.
 * **The transformer is unstable on Pendulum.** It learns up to about −500, then collapses (the curve
   above). It shares Pendulum's lr=1e-3 with every other model, which is high for attention layers.
-  The [lr follow-up](#transformer-learning-rate-follow-up) tests whether that's the cause. It's also
-  13× larger and 3× slower in wall-clock.
+  The [lr follow-up](#transformer-learning-rate-follow-up) shows that's only part of the cause. It's
+  also 13× larger and 3× slower in wall-clock.
 * **Shared vs split RNNs mirror E1.** With *unnormalised* CartPole rewards, letting the value loss
   train the shared RNN destroys learning (13 and 46). Detaching it (sb3-contrib's default `shared_lstm`)
   works as well as separate RNNs. With *normalised* Pendulum rewards, the truly shared LSTM/GRU are fine
@@ -117,8 +120,8 @@ Total wall-clock seconds (rollout + update):
 | 1024×1024 / 1024| 52    | **17.5** | 19.5        | 19.6          |
 
 * **Update phase**:
-  * At batch 64 the GPU update costs about 16.6 s whether the net is 64 or 256 wide: that's
-    pure launch and Python overhead (the 1080 sits mostly idle). CPU: 11 s and 14 s.
+  * At batch 64 the GPU update costs about 16.6 s whether the net is 64 or 256 wide: so it is
+    bound by per-minibatch overhead (kernel launches, Python), not by arithmetic. CPU: 11 s and 14 s.
   * At batch 1024 the GPU is 4× faster than CPU at width 256, and 15× faster at width 1024.
 * **Rollout phase**: dominated by stepping the environment (Box2D, about 13 s). Running the
   policy on the GPU *adds* 1–2.5 s for small nets (a host→device→host round trip every step) and
@@ -229,7 +232,20 @@ normalisation, or value-target normalisation such as PopArt). Otherwise, use spl
 
 ## Transformer learning-rate follow-up
 
-_Pending._
+![E5 curves](results/e5_curves.png)
+
+| model (Pendulum-NoVel)    | final eval     | per seed            | mean train return (AUC) |
+|:--------------------------|:---------------|:--------------------|:------------------------|
+| transformer, lr 1e-3 (E2) | −854.7 ± 10.6  | collapses in all 3  | −758.1 ± 164.1          |
+| transformer, lr 3e-4      | −578.3 ± 322.0 | −235 / −874 / −625  | −551.1 ± 157.2          |
+| gru, lr 1e-3 (reference)  | −234.4 ± 88.3  |                     | −506.5 ± 56.3           |
+
+* **The learning rate is part of the problem, but not all of it.** At 3e-4 the mean training curve
+  follows the GRU up to about 280k steps (AUC −758 → −551), and one seed ends at GRU level (−235). Two
+  seeds still degrade late in training.
+* Untested candidates: an even lower or annealed lr, fewer PPO epochs or a tighter clip range, and the
+  interaction with gSDE (the transformer's latent feeds the state-dependent noise). On this task a
+  GRU is simpler, 6× smaller and more reliable.
 
 ## Implementation notes and gotchas found along the way
 
