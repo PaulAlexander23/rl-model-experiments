@@ -80,13 +80,13 @@ def test_gru_as_lstm_matches_gru() -> None:
     assert c is c0
 
 
-def _recurrent_model(**policy_kwargs: object) -> RecurrentPPO:
+def _recurrent_model(n_steps: int = 16, **policy_kwargs: object) -> RecurrentPPO:
     env = make_env("CartPole-v1", 2, 0, mask_velocity=True)
     model = build_model(
         "recurrent_ppo",
         "RecurrentPolicy",
         env,
-        hyperparams=SMALL_PPO,
+        hyperparams={**SMALL_PPO, "n_steps": n_steps},
         policy_kwargs={"lstm_hidden_size": 8, **policy_kwargs},
         seed=0,
     )
@@ -172,3 +172,29 @@ def test_recurrent_policy_save_load_roundtrip(tmp_path: object) -> None:
 def test_ppo_is_used_for_mlp() -> None:
     model = build_model("ppo", "MlpPolicy", make_env("CartPole-v1", 1, 0), hyperparams=SMALL_PPO, policy_kwargs={})
     assert isinstance(model, PPO)
+
+
+@pytest.mark.parametrize("rnn_type", ["lstm", "gru"])
+def test_fast_sequence_matches_loop_on_real_buffer(rnn_type: str) -> None:
+    """Same values/log-probs from both paths on padded sequences produced by RecurrentRolloutBuffer."""
+    model = _recurrent_model(n_steps=64, rnn_type=rnn_type)
+    model._setup_learn(1000)
+    policy, buffer = model.policy, model.rollout_buffer
+    assert isinstance(policy, RecurrentActorCriticPolicyV2)
+    assert isinstance(buffer, RecurrentRolloutBuffer)
+    assert model.env is not None
+    callback = ConvertCallback(None)
+    callback.init_callback(model)
+    model.collect_rollouts(model.env, callback, buffer, n_rollout_steps=64)
+    assert buffer.episode_starts[1:].any(), "need mid-rollout episode starts to exercise the reset logic"
+    for batch in buffer.get(32):
+        actions = batch.actions.long().flatten()  # as RecurrentPPO.train does for Discrete spaces
+        args = (batch.observations, actions, batch.lstm_states, batch.episode_starts)
+        with th.no_grad():
+            policy.fast_sequence = True
+            fast = policy.evaluate_actions(*args)
+            policy.fast_sequence = False
+            slow = policy.evaluate_actions(*args)
+        mask = batch.mask > 1e-8  # padded steps differ by design and are masked out of the loss
+        for f, s in zip(fast, slow, strict=True):
+            th.testing.assert_close(f.flatten()[mask], s.flatten()[mask], atol=1e-5, rtol=1e-5)

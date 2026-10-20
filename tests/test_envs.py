@@ -36,12 +36,12 @@ def test_make_env_frame_stack_shape() -> None:
 
 
 def test_eval_env_shares_frozen_normalization() -> None:
-    train_env = make_env("Pendulum-v1", n_envs=2, seed=0, normalize=True)
+    train_env = make_env("Pendulum-v1", n_envs=2, seed=0, norm_obs=True, norm_reward=True)
     assert isinstance(train_env, VecNormalize)
     train_env.reset()
     for _ in range(5):
         train_env.step(np.zeros((2, 1), dtype=np.float32))
-    eval_env = make_eval_env("Pendulum-v1", 1, train_env, normalize=True)
+    eval_env = make_eval_env("Pendulum-v1", 1, train_env, norm_obs=True, norm_reward=True)
     assert isinstance(eval_env, VecNormalize)
     assert eval_env.obs_rms is train_env.obs_rms
     assert not eval_env.training

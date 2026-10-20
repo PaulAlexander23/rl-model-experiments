@@ -1,5 +1,6 @@
 # @package _global_
 # E2: memory architectures on velocity-masked (partially observable) tasks.
+# Models whose update is fast on CPU (E3) run here; GRU/transformer variants run via e2_memory_gpu.
 defaults:
   - override /hydra/launcher: joblib
 
@@ -7,9 +8,9 @@ experiment: e2_memory
 torch_threads: 1
 hydra:
   launcher:
-    n_jobs: 14
+    n_jobs: 5
   sweeper:
     params:
       env: cartpole_novel,pendulum_novel
-      model: split_mlp,framestack_mlp,transformer,lstm,gru,lstm_shared,lstm_shared_detached,gru_shared
+      model: split_mlp,framestack_mlp,lstm,lstm_shared,lstm_shared_detached
       seed: 0,1,2

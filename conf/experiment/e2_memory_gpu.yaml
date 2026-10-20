@@ -1,0 +1,17 @@
+# @package _global_
+# E2 (GPU part): GRU and transformer updates are 2-4x faster on the GPU (E3b), so these run with
+# CPU rollouts + GPU updates. Results land next to e2_memory's (wall-clock is not comparable across the two).
+defaults:
+  - override /hydra/launcher: joblib
+  - override /device: hybrid_mirror
+
+experiment: e2_memory
+torch_threads: 1
+hydra:
+  launcher:
+    n_jobs: 3
+  sweeper:
+    params:
+      env: cartpole_novel,pendulum_novel
+      model: gru,gru_shared,transformer
+      seed: 0,1,2

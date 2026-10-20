@@ -1,0 +1,15 @@
+# @package _global_
+# E3c: sb3-contrib's per-timestep loop vs the single-call fast sequence path, on CPU and GPU.
+experiment: e3_sequence_path
+torch_threads: 4
+env:
+  total_timesteps: 50_000
+hydra:
+  sweep:
+    subdir: ${env.name}/${model.name}/${device.name}/fast_${model.policy_kwargs.fast_sequence}/s${seed}
+  sweeper:
+    params:
+      env: cartpole_novel
+      model: lstm,gru
+      device: cpu,cuda
+      model.policy_kwargs.fast_sequence: true,false

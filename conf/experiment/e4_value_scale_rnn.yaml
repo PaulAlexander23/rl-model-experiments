@@ -1,0 +1,18 @@
+# @package _global_
+# E4b: same question for RNNs on CartPole-NoVel (truly shared LSTM collapsed in E2 without normalisation).
+defaults:
+  - override /hydra/launcher: joblib
+
+experiment: e4_value_scale
+torch_threads: 1
+hydra:
+  launcher:
+    n_jobs: 13
+  sweep:
+    subdir: ${env.name}/${model.name}/norm_reward_${env.norm_reward}/s${seed}
+  sweeper:
+    params:
+      env: cartpole_novel
+      model: lstm,lstm_shared,lstm_shared_detached
+      env.norm_reward: true
+      seed: 0,1,2

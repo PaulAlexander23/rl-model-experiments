@@ -15,7 +15,8 @@ def make_env(
     *,
     mask_velocity: bool = False,
     frame_stack: int = 0,
-    normalize: bool = False,
+    norm_obs: bool = False,
+    norm_reward: bool = False,
     subproc: bool = False,
 ) -> VecEnv:
     """Create a (optionally partially observable and frame-stacked) vectorised env.
@@ -32,8 +33,8 @@ def make_env(
     )
     if frame_stack > 1:
         venv = VecFrameStack(venv, n_stack=frame_stack)
-    if normalize:
-        venv = VecNormalize(venv, norm_obs=True, norm_reward=True)
+    if norm_obs or norm_reward:
+        venv = VecNormalize(venv, norm_obs=norm_obs, norm_reward=norm_reward)
     return venv
 
 

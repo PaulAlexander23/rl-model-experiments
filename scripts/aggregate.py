@@ -63,9 +63,6 @@ def load_runs(experiment: str) -> pd.DataFrame:
     for path in sorted((ROOT / "multirun" / experiment).rglob("metrics.json")):
         row = json.loads(path.read_text())
         row["run_dir"] = str(path.parent)
-        row["batch_size"] = next(
-            (int(o.split("=")[1]) for o in row.get("overrides", []) if o.startswith("env.ppo.batch_size=")), None
-        )
         rows.append(row)
     if not rows:
         raise SystemExit(f"no metrics.json under multirun/{experiment}")
@@ -150,32 +147,37 @@ def plot_dots(df: pd.DataFrame, envs: list[str], models: list[str], path: Path, 
     plt.close(fig)
 
 
-def plot_time_split(df: pd.DataFrame, facet: str, path: Path, title: str) -> None:
-    """Stacked rollout/train seconds per device, one panel per facet value."""
-    devices = [d for d in ["cpu", "cuda", "hybrid_move", "hybrid_mirror"] if d in set(df.device)]
+def plot_time_split(df: pd.DataFrame, facet: str, path: Path, *, sharey: bool = False) -> None:
+    """Stacked rollout/update seconds per device, one panel per facet value, total labelled on top."""
+    devices = [d for d in ["cpu", "cuda", "hybrid_move", "hybrid_mirror"] if d in set(df["device"])]
     facets = list(dict.fromkeys(df[facet]))
-    fig, axes = plt.subplots(1, len(facets), figsize=(2.6 * len(facets), 2.6), squeeze=False, sharey=False)
+    fig, axes = plt.subplots(1, len(facets), figsize=(2.6 * len(facets), 2.8), squeeze=False, sharey=sharey)
     for ax, value in zip(axes[0], facets, strict=True):
         sub = df[df[facet] == value].set_index("device").reindex(devices)
         x = np.arange(len(devices))
-        ax.bar(x, sub.rollout_time, color=COLORS["rollout"], width=0.6, label="rollout", edgecolor="white", lw=1)
-        ax.bar(
-            x,
-            sub.train_time,
-            bottom=sub.rollout_time,
-            color=COLORS["train"],
-            width=0.6,
-            label="update",
-            edgecolor="white",
-            lw=1,
-        )
+        rollout, update = sub["rollout_time"].to_numpy(), sub["train_time"].to_numpy()
+        bar = {"width": 0.6, "edgecolor": "white", "linewidth": 1}
+        ax.bar(x, rollout, color=COLORS["rollout"], label="rollout", **bar)
+        ax.bar(x, update, bottom=rollout, color=COLORS["train"], label="update", **bar)
+        for xi, total in zip(x, rollout + update, strict=True):
+            ax.annotate(
+                f"{total:.0f}s",
+                (xi, total),
+                xytext=(0, 2),
+                textcoords="offset points",
+                ha="center",
+                fontsize=8,
+                color=INK_2,
+            )
         ax.set_xticks(x, [d.replace("hybrid_", "hyb.\n") for d in devices])
-        ax.set_title(str(value))
+        ax.set_title(str(value), pad=12)
+        ax.set_axisbelow(True)
         ax.grid(axis="x", visible=False)
+        ax.margins(y=0.12)
     axes[0][0].set_ylabel("wall-clock seconds")
     handles, labels = axes[0][0].get_legend_handles_labels()
-    fig.legend(handles, labels, loc="upper center", ncol=2, bbox_to_anchor=(0.5, 1.04))
-    fig.suptitle(title, y=1.12, color=INK)
+    fig.tight_layout()
+    fig.legend(handles, labels, loc="lower center", ncol=2, bbox_to_anchor=(0.5, 0.98))
     fig.savefig(path, bbox_inches="tight")
     plt.close(fig)
 
@@ -215,15 +217,20 @@ def e2(df: pd.DataFrame) -> str:
 def e3(df: pd.DataFrame, experiment: str) -> str:
     df = df.copy()
     facet = "case"
-    if df.batch_size.notna().any():
-        df[facet] = (
-            df.model.str.replace("split_mlp", "mlp64").str.replace("mlp64_", "mlp")
-            + " / bs"
-            + (df.batch_size.astype("Int64").astype(str))
-        )
+    if experiment == "e3_device_mlp":
+        width = df["model"].str.replace("split_mlp", "mlp64").str.replace("mlp64_", "mlp")
+        df[facet] = width + " / bs" + df["batch_size"].astype(str)
+    elif experiment == "e3_sequence_path":
+        df[facet] = df["model"] + " / " + df["fast_sequence"].map(lambda fast: "fast" if fast else "loop")
     else:
-        df[facet] = df.model
-    plot_time_split(df, facet, RESULTS / f"{experiment}.png", "Where the time goes: rollout vs PPO update")
+        df[facet] = df["model"]
+    df = df.sort_values(["n_params", facet])  # narrow -> wide
+    plot_time_split(
+        df,
+        facet,
+        RESULTS / f"{experiment}.png",
+        sharey=experiment == "e3_sequence_path",
+    )
     cols = ["wall_time", "rollout_time", "train_time", "transfer_time", "fps", "eval_mean"]
     table = df.sort_values([facet, "device"])[[facet, "device", *cols]].round(1).to_markdown(index=False)
     return f"![{experiment}]({experiment}.png)\n\n{table}\n"

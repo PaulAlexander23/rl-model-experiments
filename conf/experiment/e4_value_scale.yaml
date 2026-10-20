@@ -1,0 +1,19 @@
+# @package _global_
+# E4: is shared-parameter failure caused by the value loss dominating?  Reward-only normalisation keeps
+# observations untouched but brings returns to O(1); vf_coef=0.1 down-weights the value gradient instead.
+defaults:
+  - override /hydra/launcher: joblib
+
+experiment: e4_value_scale
+torch_threads: 1
+hydra:
+  launcher:
+    n_jobs: 13
+  sweep:
+    subdir: ${env.name}/${model.name}/norm_reward_${env.norm_reward}/s${seed}
+  sweeper:
+    params:
+      env: cartpole,acrobot,lunarlander
+      model: shared_mlp,split_mlp,shared_mlp_vf01
+      env.norm_reward: true
+      seed: 0,1,2,3,4

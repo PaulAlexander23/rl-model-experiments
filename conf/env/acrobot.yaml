@@ -1,7 +1,8 @@
 name: acrobot
 id: Acrobot-v1
 mask_velocity: false
-normalize: false
+norm_obs: false
+norm_reward: false
 n_envs: 16
 total_timesteps: 300_000
 ppo:

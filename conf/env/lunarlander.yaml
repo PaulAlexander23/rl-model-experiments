@@ -1,7 +1,8 @@
 name: lunarlander
 id: LunarLander-v3
 mask_velocity: false
-normalize: false
+norm_obs: false
+norm_reward: false
 n_envs: 16
 total_timesteps: 1_000_000
 ppo:

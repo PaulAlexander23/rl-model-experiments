@@ -106,3 +106,22 @@ def test_phase_timer_accounts_for_time() -> None:
     model.learn(128, callback=timer)
     assert timer.rollout_time > 0
     assert timer.train_time > 0
+
+
+@requires_cuda
+@pytest.mark.parametrize("strategy", ["move", "mirror"])
+def test_hybrid_with_gsde(strategy: str) -> None:
+    """gSDE samples its exploration matrix *before* on_rollout_start; it must follow the acting policy."""
+    env = make_env("Pendulum-v1", 2, 0)
+    model = build_model(
+        "ppo",
+        "MlpPolicy",
+        env,
+        hyperparams={**SMALL_PPO, "use_sde": True, "sde_sample_freq": 0},
+        policy_kwargs={},
+        device="cuda",
+        seed=0,
+    )
+    probe = DeviceProbe()
+    model.learn(256, callback=CallbackList([HybridDeviceCallback("cpu", "cuda", strategy), probe]))  # type: ignore[arg-type]
+    assert probe.rollout_devices == {"cpu"}

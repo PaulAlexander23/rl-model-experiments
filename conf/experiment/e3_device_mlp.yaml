@@ -6,6 +6,8 @@ torch_threads: 4
 env:
   total_timesteps: 100_000
 hydra:
+  sweep:
+    subdir: ${env.name}/${model.name}/${device.name}/bs${env.ppo.batch_size}/s${seed}
   sweeper:
     params:
       env: lunarlander

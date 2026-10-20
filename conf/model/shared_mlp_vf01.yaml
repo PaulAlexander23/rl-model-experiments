@@ -1,0 +1,7 @@
+# Shared trunk with the value loss down-weighted 5x (SB3 default vf_coef is 0.5).
+defaults:
+  - shared_mlp
+  - _self_
+name: shared_mlp_vf01
+ppo_overrides:
+  vf_coef: 0.1

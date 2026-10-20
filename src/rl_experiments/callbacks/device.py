@@ -17,7 +17,6 @@ So switching `policy`, its optimizer state, `model.device` and `rollout_buffer.d
 
 from __future__ import annotations
 
-import copy
 import time
 from typing import Literal
 
@@ -59,8 +58,16 @@ class HybridDeviceCallback(BaseCallback):
         if self.strategy == "mirror":
             self._train_policy = self.model.policy.to(self.train_device)
             move_optimizer_state(self._train_policy.optimizer, self.train_device)
-            self._rollout_policy = copy.deepcopy(self._train_policy).to(self.rollout_device)
-            self._rollout_policy.optimizer.state.clear()  # the acting copy never takes a gradient step
+            # Build a second policy exactly as the algorithm's _setup_model does. (deepcopy fails with gSDE,
+            # whose rsampled exploration matrix is a non-leaf tensor.)
+            model = self.model
+            self._rollout_policy = model.policy_class(  # type: ignore[call-arg]
+                model.observation_space,
+                model.action_space,
+                model.lr_schedule,
+                use_sde=model.use_sde,
+                **model.policy_kwargs,
+            ).to(self.rollout_device)
 
     def _on_rollout_start(self) -> None:
         start = time.perf_counter()
@@ -72,6 +79,9 @@ class HybridDeviceCallback(BaseCallback):
             self._rollout_policy.load_state_dict(self._train_policy.state_dict())
             self.model.policy = self._rollout_policy
         self._set_device(self.rollout_device)
+        # SB3 samples the gSDE exploration matrix *before* on_rollout_start, i.e. on the old device/policy.
+        if getattr(self.model, "use_sde", False):
+            self.model.policy.reset_noise(self.training_env.num_envs)  # type: ignore[operator]
         self.transfer_time += time.perf_counter() - start
 
     def _on_rollout_end(self) -> None:

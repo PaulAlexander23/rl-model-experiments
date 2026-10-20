@@ -32,7 +32,8 @@ def run(cfg: DictConfig, output_dir: Path) -> dict[str, Any]:
     env_kwargs = {
         "mask_velocity": cfg.env.mask_velocity,
         "frame_stack": cfg.model.frame_stack,
-        "normalize": cfg.env.get("normalize", False),
+        "norm_obs": cfg.env.norm_obs,
+        "norm_reward": cfg.env.norm_reward,
     }
     env = make_env(cfg.env.id, cfg.env.n_envs, cfg.seed, **env_kwargs)
     hyperparams = {**cfg.env.ppo, **cfg.model.ppo_overrides}
@@ -73,6 +74,9 @@ def run(cfg: DictConfig, output_dir: Path) -> dict[str, Any]:
         "seed": cfg.seed,
         "total_timesteps": int(model.num_timesteps),
         "n_params": sum(p.numel() for p in model.policy.parameters()),
+        "batch_size": hyperparams.get("batch_size"),
+        "fast_sequence": cfg.model.policy_kwargs.get("fast_sequence"),
+        "norm_reward": cfg.env.norm_reward,
         "eval_mean": float(rewards.mean()),
         "eval_std": float(rewards.std()),
         "wall_time": wall_time,
