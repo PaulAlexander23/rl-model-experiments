@@ -1,0 +1,6 @@
+defaults:
+  - split_mlp
+  - _self_
+name: split_mlp_1024
+policy_kwargs:
+  net_arch: {pi: [1024, 1024], vf: [1024, 1024]}

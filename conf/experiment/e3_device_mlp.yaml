@@ -1,0 +1,14 @@
+# @package _global_
+# E3a: wall-clock of CPU / GPU / hybrid for MLP policies of increasing width.
+# Sequential (basic launcher) so runs don't compete for cores; learning quality is not the point here.
+experiment: e3_device_mlp
+torch_threads: 4
+env:
+  total_timesteps: 100_000
+hydra:
+  sweeper:
+    params:
+      env: lunarlander
+      model: split_mlp,split_mlp_256,split_mlp_1024
+      device: cpu,cuda,hybrid_move,hybrid_mirror
+      env.ppo.batch_size: 64,1024

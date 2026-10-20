@@ -1,0 +1,12 @@
+# @package _global_
+# E3b: wall-clock of CPU / GPU / hybrid for memory models, and the effect of the fast sequence path.
+experiment: e3_device_recurrent
+torch_threads: 4
+env:
+  total_timesteps: 50_000
+hydra:
+  sweeper:
+    params:
+      env: cartpole_novel
+      model: lstm,gru,transformer
+      device: cpu,cuda,hybrid_mirror

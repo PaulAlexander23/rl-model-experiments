@@ -1,6 +1,8 @@
 name: pendulum
 id: Pendulum-v1
 mask_velocity: false
+# Returns are O(-1000); normalising obs and rewards (as rl-zoo does for PendulumNoVel) stabilises the critic.
+normalize: true
 n_envs: 4
 total_timesteps: 200_000
 ppo:

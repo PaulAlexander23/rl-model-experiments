@@ -21,7 +21,7 @@ from stable_baselines3.common.logger import configure
 
 from rl_experiments.builder import build_model
 from rl_experiments.callbacks.device import HybridDeviceCallback, PhaseTimerCallback
-from rl_experiments.envs.factory import make_env
+from rl_experiments.envs.factory import make_env, make_eval_env
 
 # Absolute so it resolves both via `python -m` and the `rl-train` console script.
 CONFIG_DIR = Path(__file__).resolve().parents[2] / "conf"
@@ -29,7 +29,11 @@ CONFIG_DIR = Path(__file__).resolve().parents[2] / "conf"
 
 def run(cfg: DictConfig, output_dir: Path) -> dict[str, Any]:
     th.set_num_threads(cfg.torch_threads)
-    env_kwargs = {"mask_velocity": cfg.env.mask_velocity, "frame_stack": cfg.model.frame_stack}
+    env_kwargs = {
+        "mask_velocity": cfg.env.mask_velocity,
+        "frame_stack": cfg.model.frame_stack,
+        "normalize": cfg.env.get("normalize", False),
+    }
     env = make_env(cfg.env.id, cfg.env.n_envs, cfg.seed, **env_kwargs)
     hyperparams = {**cfg.env.ppo, **cfg.model.ppo_overrides}
     model = build_model(
@@ -55,7 +59,7 @@ def run(cfg: DictConfig, output_dir: Path) -> dict[str, Any]:
     model.learn(total_timesteps=cfg.env.total_timesteps, callback=CallbackList(callbacks))
     wall_time = time.perf_counter() - start
 
-    eval_env = make_env(cfg.env.id, 1, cfg.seed + 10_000, **env_kwargs)
+    eval_env = make_eval_env(cfg.env.id, cfg.seed + 10_000, env, **env_kwargs)
     episode_rewards, _ = evaluate_policy(
         model, eval_env, n_eval_episodes=cfg.eval_episodes, deterministic=True, return_episode_rewards=True
     )

@@ -1,0 +1,15 @@
+# @package _global_
+# E1: shared trunk vs separate actor/critic MLPs on fully observed benchmarks.
+defaults:
+  - override /hydra/launcher: joblib
+
+experiment: e1_shared_vs_split
+torch_threads: 1
+hydra:
+  launcher:
+    n_jobs: 14
+  sweeper:
+    params:
+      env: cartpole,acrobot,pendulum,lunarlander
+      model: shared_mlp,split_mlp
+      seed: 0,1,2,3,4

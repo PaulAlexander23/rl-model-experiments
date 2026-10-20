@@ -1,6 +1,7 @@
 name: cartpole
 id: CartPole-v1
 mask_velocity: false
+normalize: false
 n_envs: 8
 total_timesteps: 100_000
 ppo:

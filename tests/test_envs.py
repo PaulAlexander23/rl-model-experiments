@@ -1,8 +1,9 @@
 import gymnasium as gym
 import numpy as np
 import pytest
+from stable_baselines3.common.vec_env import VecNormalize
 
-from rl_experiments.envs.factory import make_env
+from rl_experiments.envs.factory import make_env, make_eval_env
 from rl_experiments.envs.wrappers import MaskVelocityWrapper
 
 
@@ -32,3 +33,21 @@ def test_make_env_frame_stack_shape() -> None:
     assert isinstance(obs, np.ndarray)
     assert obs.shape == (3, 2 * 4)
     venv.close()
+
+
+def test_eval_env_shares_frozen_normalization() -> None:
+    train_env = make_env("Pendulum-v1", n_envs=2, seed=0, normalize=True)
+    assert isinstance(train_env, VecNormalize)
+    train_env.reset()
+    for _ in range(5):
+        train_env.step(np.zeros((2, 1), dtype=np.float32))
+    eval_env = make_eval_env("Pendulum-v1", 1, train_env, normalize=True)
+    assert isinstance(eval_env, VecNormalize)
+    assert eval_env.obs_rms is train_env.obs_rms
+    assert not eval_env.training
+    assert not eval_env.norm_reward
+
+
+def test_eval_env_without_normalization() -> None:
+    train_env = make_env("CartPole-v1", n_envs=2, seed=0)
+    assert not isinstance(make_eval_env("CartPole-v1", 1, train_env), VecNormalize)
