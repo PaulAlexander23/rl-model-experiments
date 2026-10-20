@@ -48,6 +48,13 @@ def test_eval_env_shares_frozen_normalization() -> None:
     assert not eval_env.norm_reward
 
 
+def test_eval_env_with_reward_only_normalization() -> None:
+    train_env = make_env("CartPole-v1", n_envs=2, seed=0, norm_reward=True)
+    assert isinstance(train_env, VecNormalize)
+    eval_env = make_eval_env("CartPole-v1", 1, train_env, norm_reward=True)
+    assert not isinstance(eval_env, VecNormalize)  # raw observations and raw rewards
+
+
 def test_eval_env_without_normalization() -> None:
     train_env = make_env("CartPole-v1", n_envs=2, seed=0)
     assert not isinstance(make_eval_env("CartPole-v1", 1, train_env), VecNormalize)

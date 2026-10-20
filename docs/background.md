@@ -131,7 +131,16 @@ Timing runs execute sequentially with `torch_threads=4`, so they don't compete f
 learning experiments (E1, E2) run 14 at a time with `torch_threads=1`, on whichever device E3 shows is
 fastest.
 
-## 5. Beyond SB3: where GPUs actually pay off
+## 5. Follow-ups added during the investigation
+
+* **E4 (value scale).** E1 and E2 showed shared parameters failing exactly where returns are large and
+  unnormalised. E4 reruns shared/split MLPs (Acrobot, LunarLander, CartPole) and shared/detached/separate
+  LSTMs (CartPole-NoVel) with *reward-only* normalisation, plus a `vf_coef=0.1` variant. A short
+  diagnostic (`scripts/bench/trunk_saturation.py`) measures tanh saturation to identify the mechanism.
+* **E5 (transformer learning rate).** The transformer collapsed mid-training on Pendulum-NoVel at
+  lr=1e-3; E5 reruns it at 3e-4.
+
+## 6. Beyond SB3: where GPUs actually pay off
 
 When environments are cheap, the real speed-ups come from moving the *environment* onto the GPU and
 avoiding host↔device traffic altogether. Examples are JAX (gymnax, Brax, PureJaxRL), Isaac

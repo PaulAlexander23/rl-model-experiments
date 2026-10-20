@@ -99,7 +99,7 @@ def summary_table(df: pd.DataFrame, keys: list[str], metrics: dict[str, str], di
     return out.reset_index().to_markdown(index=False)
 
 
-def plot_curves(df: pd.DataFrame, envs: list[str], models: list[str], path: Path, title: str) -> None:
+def plot_curves(df: pd.DataFrame, envs: list[str], models: list[str], path: Path) -> None:
     fig, axes = plt.subplots(1, len(envs), figsize=(3.4 * len(envs), 2.8), squeeze=False)
     for ax, env in zip(axes[0], envs, strict=True):
         sub = df[df["env"] == env]
@@ -117,16 +117,20 @@ def plot_curves(df: pd.DataFrame, envs: list[str], models: list[str], path: Path
         ax.set_xlabel("timesteps")
         ax.ticklabel_format(axis="x", style="sci", scilimits=(0, 0))
     axes[0][0].set_ylabel("training return (100-ep mean)")
+    for ax in axes[0]:
+        ax.title.set_position((0.5, 1.04))
     handles, labels = axes[0][0].get_legend_handles_labels()
-    fig.legend(handles, labels, loc="upper center", ncol=len(labels), bbox_to_anchor=(0.5, 1.02))
-    fig.suptitle(title, y=1.1, color=INK)
+    fig.tight_layout()
+    fig.legend(handles, labels, loc="lower center", ncol=len(labels), bbox_to_anchor=(0.5, 0.98))
     fig.savefig(path, bbox_inches="tight")
     plt.close(fig)
 
 
 def plot_dots(df: pd.DataFrame, envs: list[str], models: list[str], path: Path, title: str) -> None:
     """Final deterministic eval per model: one dot per seed, a bar for the mean (single hue: identity is the row)."""
-    fig, axes = plt.subplots(1, len(envs), figsize=(3.6 * len(envs), 0.35 * len(models) + 1), squeeze=False)
+    fig, axes = plt.subplots(
+        1, len(envs), figsize=(3.6 * len(envs), 0.35 * len(models) + 1), squeeze=False, sharey=True
+    )
     for ax, env in zip(axes[0], envs, strict=True):
         sub = df[df["env"] == env]
         for i, model in enumerate(models):
@@ -136,13 +140,14 @@ def plot_dots(df: pd.DataFrame, envs: list[str], models: list[str], path: Path, 
             ax.scatter(vals, np.full_like(vals, i), s=18, color=SLOTS[0], alpha=0.6, linewidths=0)
             ax.plot([vals.mean()] * 2, [i - 0.3, i + 0.3], color=INK, linewidth=2)
         ax.set_yticks(range(len(models)), models)
-        ax.invert_yaxis()
+        ax.set_ylim(len(models) - 0.5, -0.5)  # fixed and top-down, so every panel's rows line up
         ax.set_title(env)
         ax.set_xlabel("eval return (20 episodes, deterministic)")
         ax.grid(axis="y", visible=False)
     for ax in axes[0][1:]:
         ax.tick_params(labelleft=False)
-    fig.suptitle(title, y=1.02, color=INK)
+    if title:
+        fig.suptitle(title, y=1.02, color=INK)
     fig.savefig(path, bbox_inches="tight")
     plt.close(fig)
 
@@ -185,7 +190,7 @@ def plot_time_split(df: pd.DataFrame, facet: str, path: Path, *, sharey: bool = 
 def e1(df: pd.DataFrame) -> str:
     df = add_auc(df)
     envs = [e for e in ["cartpole", "acrobot", "pendulum", "lunarlander"] if e in set(df.env)]
-    plot_curves(df, envs, ["shared_mlp", "split_mlp"], RESULTS / "e1_curves.png", "Shared trunk vs split actor-critic")
+    plot_curves(df, envs, ["shared_mlp", "split_mlp"], RESULTS / "e1_curves.png")
     table = summary_table(
         df, ["env", "model"], {"eval_mean": "final eval", "auc": "mean train return (AUC)", "n_params": "params"}
     )
@@ -204,7 +209,6 @@ def e2(df: pd.DataFrame) -> str:
         envs,
         ["framestack_mlp", "transformer", "lstm", "gru"],
         RESULTS / "e2_curves.png",
-        "Memory architectures (split actor/critic variants)",
     )
     table = summary_table(
         df,
@@ -236,6 +240,31 @@ def e3(df: pd.DataFrame, experiment: str) -> str:
     return f"![{experiment}]({experiment}.png)\n\n{table}\n"
 
 
+def e4(df: pd.DataFrame) -> str:
+    """Combine E4 (reward-normalised / vf_coef) runs with the unnormalised E1/E2 baselines."""
+    e1_base = load_runs("e1_shared_vs_split")
+    e1_base = e1_base[e1_base["env"].isin(["cartpole", "acrobot", "lunarlander"])]
+    e2_base = load_runs("e2_memory")
+    e2_base = e2_base[(e2_base["env"] == "cartpole_novel") & e2_base["model"].isin(df["model"].unique().tolist())]
+    df = pd.concat([df, e1_base.assign(norm_reward=False), e2_base.assign(norm_reward=False)], ignore_index=True)
+    df["variant"] = df["model"] + np.where(df["norm_reward"].astype(bool), " + norm_reward", "")
+    df = add_auc(df)
+    order = [
+        f"{m}{suffix}"
+        for m in ["split_mlp", "shared_mlp", "shared_mlp_vf01", "lstm", "lstm_shared", "lstm_shared_detached"]
+        for suffix in ["", " + norm_reward"]
+    ]
+    for name, envs, prefixes in (
+        ("e4_eval_mlp", ["cartpole", "acrobot", "lunarlander"], ("split_mlp", "shared_mlp")),
+        ("e4_eval_rnn", ["cartpole_novel"], ("lstm",)),
+    ):
+        sub = df[df["env"].isin(envs)]
+        variants = [v for v in order if v in set(sub["variant"]) and v.startswith(prefixes)]
+        plot_dots(sub.assign(model=sub["variant"]), envs, variants, RESULTS / f"{name}.png", "")
+    table = summary_table(df, ["env", "variant"], {"eval_mean": "final eval", "auc": "mean train return (AUC)"})
+    return f"![E4 MLP](e4_eval_mlp.png)\n\n![E4 RNN](e4_eval_rnn.png)\n\n{table}\n"
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("experiment")
@@ -246,6 +275,8 @@ def main() -> None:
         body = e1(df)
     elif args.experiment.startswith("e2"):
         body = e2(df)
+    elif args.experiment.startswith("e4"):
+        body = e4(df)
     else:
         body = e3(df, args.experiment)
     out = RESULTS / f"{args.experiment}.md"

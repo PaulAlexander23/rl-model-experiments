@@ -39,11 +39,12 @@ def make_env(
 
 
 def make_eval_env(env_id: str, seed: int, train_env: VecEnv, **kwargs: bool | int) -> VecEnv:
-    """Single-env copy of `train_env` for evaluation: frozen observation statistics, raw rewards."""
-    eval_env = make_env(env_id, 1, seed, **kwargs)  # type: ignore[arg-type]
-    if isinstance(train_env, VecNormalize):
+    """Single-env copy of `train_env` for evaluation: raw rewards, frozen observation statistics (if any)."""
+    norm_obs = isinstance(train_env, VecNormalize) and train_env.norm_obs
+    eval_env = make_env(env_id, 1, seed, **{**kwargs, "norm_obs": norm_obs, "norm_reward": False})  # type: ignore[arg-type]
+    if norm_obs:
+        assert isinstance(train_env, VecNormalize)
         assert isinstance(eval_env, VecNormalize)
         eval_env.training = False
-        eval_env.norm_reward = False
         eval_env.obs_rms = train_env.obs_rms
     return eval_env

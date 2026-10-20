@@ -1,0 +1,7 @@
+# Transformer with a lower learning rate (attention layers are often unstable at PPO's usual 1e-3).
+defaults:
+  - transformer
+  - _self_
+name: transformer_lr3e4
+ppo_overrides:
+  learning_rate: 3e-4

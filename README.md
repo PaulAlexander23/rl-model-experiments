@@ -6,6 +6,7 @@ PPO experiments with [Stable-Baselines3](https://stable-baselines3.readthedocs.i
 2. **Memory architectures** (frame stack, LSTM, GRU, windowed transformer; shared vs separate RNNs) on
    velocity-masked POMDP versions of classic-control tasks.
 3. **CPU vs GPU vs hybrid** (collect rollouts on CPU, train on GPU) via an SB3 callback.
+4. **Why shared parameters fail** without value-scale normalisation (follow-up).
 
 * Background, rationale and experiment design: [docs/background.md](docs/background.md)
 * Results and conclusions: [docs/findings.md](docs/findings.md)
@@ -33,7 +34,8 @@ conf/
   model/               # split_mlp(_256/_1024), shared_mlp, framestack_mlp, transformer,
                        # lstm, gru, lstm_shared, lstm_shared_detached, gru_shared
   device/              # cpu, cuda, hybrid_move, hybrid_mirror
-  experiment/          # sweep presets: e1_shared_vs_split, e2_memory, e3_device_mlp, e3_device_recurrent
+  experiment/          # sweep presets: e1_shared_vs_split, e2_memory(_gpu), e3_device_mlp,
+                       # e3_device_recurrent, e3_sequence_path, e4_value_scale(_rnn/_vf), e5_transformer_lr
 ```
 
 ```bash
@@ -67,6 +69,7 @@ model.learn(1_000_000, callback=HybridDeviceCallback("cpu", "cuda", strategy="mi
 | `src/rl_experiments/builder.py` | config → SB3 algorithm |
 | `src/rl_experiments/train.py` | Hydra entry point (`rl-train`) |
 | `scripts/aggregate.py` | sweep results → markdown tables + figures |
+| `scripts/bench/` | micro-benchmarks: CPU LSTM vs GRU kernels, tanh trunk saturation |
 
 ## Tooling
 

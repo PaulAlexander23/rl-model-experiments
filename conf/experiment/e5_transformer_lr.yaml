@@ -1,0 +1,16 @@
+# @package _global_
+# E5: is the transformer's collapse on Pendulum-NoVel (E2) caused by the 1e-3 learning rate?
+defaults:
+  - override /hydra/launcher: joblib
+  - override /device: hybrid_mirror
+
+experiment: e5_transformer_lr
+torch_threads: 1
+hydra:
+  launcher:
+    n_jobs: 3
+  sweeper:
+    params:
+      env: pendulum_novel
+      model: transformer_lr3e4
+      seed: 0,1,2
