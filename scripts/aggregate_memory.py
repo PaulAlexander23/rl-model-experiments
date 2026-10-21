@@ -160,7 +160,7 @@ def m1_task(task: str) -> tuple[str, pd.DataFrame]:
 def m1() -> None:
     sections, params = [], None
     for task in TASKS:
-        if not (ROOT / "multirun" / f"m1_width_{task}").exists():
+        if not any((ROOT / "multirun" / f"m1_width_{task}").rglob("metrics.json")):
             continue
         _, minimum = m1_task(task)
         minimum.columns = [f"{DIALS[task]} {c}" for c in minimum.columns]
@@ -177,10 +177,15 @@ def m1() -> None:
 
 
 def m2() -> None:
+    """Depth 2-3 from m2_depth, plus the matching depth-1 runs from M1."""
     df = load("m2_depth")
+    for task in set(df.task):
+        base = load(f"m1_width_{task}")
+        keep = base.width.isin(set(df.width)) & base.model.isin(set(df.loc[df.task == task].model))
+        df = pd.concat([df, base[keep]], ignore_index=True)
     parts = ["# M2: depth vs width\n\nScore: mean ± std over 3 seeds.\n"]
     for task in [t for t in TASKS if t in set(df.task)]:
-        sub = df[df.task == task]
+        sub = df.loc[df.task == task]
         sub = sub.assign(config=[f"w{w} d{d}" for w, d in zip(sub.width, sub.depth, strict=True)])
         for width in sorted(set(sub.width)):
             name = f"m2_depth_{task}_w{width}"

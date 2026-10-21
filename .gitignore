@@ -12,3 +12,4 @@ multirun/
 outputs/
 *.zip
 runs_jax/
+logs/

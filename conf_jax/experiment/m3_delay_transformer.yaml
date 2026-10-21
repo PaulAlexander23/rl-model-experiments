@@ -1,0 +1,14 @@
+# @package _global_
+# M3 (transformer half): delayed recall vs attention context, at the default BPTT length 64.
+defaults:
+  - override /task: delayed_cue
+  - override /model: transformer
+experiment: m3_delay
+task:
+  total_timesteps: 8_000_000
+ppo:
+  n_steps: 256
+hydra:
+  sweeper:
+    params:
+      model.memory: 16,64,256

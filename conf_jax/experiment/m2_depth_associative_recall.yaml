@@ -1,0 +1,14 @@
+# @package _global_
+# M2: depth 2 and 3 at width 32 on associative_recall (depth 1 comes from M1). Results go to multirun/m2_depth.
+defaults:
+  - override /task: associative_recall
+experiment: m2_depth
+task:
+  total_timesteps: 8_000_000
+model:
+  width: 32
+hydra:
+  sweeper:
+    params:
+      model: lru,gru,lstm,transformer
+      model.depth: 2,3

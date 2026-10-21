@@ -1,0 +1,15 @@
+# @package _global_
+# M3 (recurrent half): delayed recall vs truncated-BPTT length. Width 64, depth 1.
+# n_steps 256 so every seq_len divides it; run m3_delay_transformer into the same directory.
+defaults:
+  - override /task: delayed_cue
+experiment: m3_delay
+task:
+  total_timesteps: 8_000_000
+ppo:
+  n_steps: 256
+hydra:
+  sweeper:
+    params:
+      model: lru,gru,lstm
+      ppo.seq_len: 16,64,256
