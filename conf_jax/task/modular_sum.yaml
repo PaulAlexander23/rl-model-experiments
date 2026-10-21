@@ -1,0 +1,4 @@
+name: modular_sum
+kwargs: {}
+levels: [2, 3, 5, 8]           # modulus of the running sum (2 = parity)
+total_timesteps: 10_000_000

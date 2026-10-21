@@ -1,0 +1,6 @@
+name: transformer
+core: transformer
+width: 64
+depth: 1
+memory: 64    # context: past steps visible to each layer
+kwargs: {context: "${model.memory}"}

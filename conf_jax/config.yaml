@@ -1,0 +1,38 @@
+# JAX PPO (src/rl_experiments/jaxrl). One job = one (task, model) compiled once and vmapped over
+# every level in task.levels and n_seeds seeds.
+defaults:
+  - task: delayed_cue
+  - model: gru
+  - _self_
+  - optional experiment: null
+
+experiment: adhoc
+seed: 0
+n_seeds: 3
+
+ppo:
+  total_timesteps: ${task.total_timesteps}
+  n_envs: 128
+  n_steps: 128
+  seq_len: 64          # truncated-BPTT length
+  n_minibatches: 16
+  n_epochs: 4
+  learning_rate: 1.0e-3
+  anneal_lr: true
+  gamma: 0.99
+  gae_lambda: 0.95
+  clip_range: 0.2
+  ent_coef: 0.0
+  vf_coef: 0.5
+  max_grad_norm: 0.5
+  eval_episodes: 256
+
+hydra:
+  run:
+    dir: runs_jax/${experiment}/${now:%Y-%m-%d_%H-%M-%S}_${task.name}_${model.name}_w${model.width}_d${model.depth}
+  sweep:
+    dir: multirun/${experiment}
+    # Every key an experiment sweeps must appear here, or runs overwrite each other.
+    subdir: ${task.name}/${model.name}/w${model.width}_d${model.depth}_mem${model.memory}_bptt${ppo.seq_len}_lr${ppo.learning_rate}
+  job:
+    chdir: false

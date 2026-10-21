@@ -1,0 +1,4 @@
+name: hidden_regime
+kwargs: {}
+levels: [1.0, 0.5, 0.3, 0.2]   # probability an observation shows the true regime
+total_timesteps: 10_000_000

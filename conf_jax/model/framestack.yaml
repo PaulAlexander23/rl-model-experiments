@@ -1,0 +1,6 @@
+name: framestack
+core: framestack
+width: 64
+depth: 1
+memory: 8     # frames in the window
+kwargs: {n_frames: "${model.memory}"}

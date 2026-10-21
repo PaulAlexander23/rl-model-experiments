@@ -1,0 +1,4 @@
+name: delayed_cue
+kwargs: {max_delay: 256}
+levels: [4, 16, 64, 256]       # steps between cue and query
+total_timesteps: 10_000_000

@@ -12,6 +12,15 @@ PPO experiments with [Stable-Baselines3](https://stable-baselines3.readthedocs.i
 * Results and conclusions: [docs/findings.md](docs/findings.md)
 * Generated tables/figures: [docs/results/](docs/results/)
 
+**Part 2: memory sizing vs partial observability** (JAX). How wide, deep and far-reaching must
+an MLP, frame stack, LSTM, GRU, LRU or gated transformer be, on five synthetic tasks that each turn
+up one kind of partial observability (noise, memory length, capacity, computation, belief
+tracking)? Environment, rollout and PPO update are compiled into one XLA program and `vmap`-ped over
+seeds and difficulty levels (~200-600k env steps/s on a GTX 1080, vs 0.4-4k for SB3 recurrent PPO).
+
+* Background, hypotheses and plan: [docs/memory-background.md](docs/memory-background.md)
+* Results and conclusions: [docs/memory-findings.md](docs/memory-findings.md)
+
 ## Setup
 
 Requires [uv](https://docs.astral.sh/uv/). PyTorch comes from the CUDA 12.6 wheel index, the newest
@@ -49,6 +58,15 @@ uv run rl-train -m experiment=e1_shared_vs_split
 uv run python scripts/aggregate.py e1_shared_vs_split
 ```
 
+Part 2 (JAX) has its own config tree in `conf_jax/` (`task/`, `model/`, `experiment/`):
+
+```bash
+# one job = one compile, trained on every level x 3 seeds at once
+uv run rl-train-jax task=associative_recall model=gru model.width=32
+uv run rl-train-jax -m experiment=m1_width_modular_sum
+uv run python scripts/aggregate_memory.py m1
+```
+
 Rollouts on CPU with updates on GPU, in your own SB3 code:
 
 ```python
@@ -68,7 +86,9 @@ model.learn(1_000_000, callback=HybridDeviceCallback("cpu", "cuda", strategy="mi
 | `src/rl_experiments/callbacks/device.py` | `HybridDeviceCallback` (move / mirror), `PhaseTimerCallback` |
 | `src/rl_experiments/builder.py` | config → SB3 algorithm |
 | `src/rl_experiments/train.py` | Hydra entry point (`rl-train`) |
+| `src/rl_experiments/jaxrl/` | Part 2: JAX tasks (`tasks.py`), memory cores (`models.py`), recurrent PPO (`ppo.py`), Hydra entry (`run.py`) |
 | `scripts/aggregate.py` | sweep results → markdown tables + figures |
+| `scripts/aggregate_memory.py` | Part 2 sweeps → tables + figures |
 | `scripts/bench/` | micro-benchmarks: CPU LSTM vs GRU kernels, tanh trunk saturation |
 
 ## Tooling
@@ -82,3 +102,4 @@ model.learn(1_000_000, callback=HybridDeviceCallback("cpu", "cuda", strategy="mi
 | pre-commit | runs ruff, pyright, codespell, uv-lock check and file hygiene hooks on every commit |
 | GitHub Actions | `.github/workflows/ci.yml` runs the same checks (GPU tests skip without CUDA) |
 | Hydra | configuration + sweeps (joblib launcher for parallel runs) |
+| JAX + Flax + Optax | Part 2: compiled env + PPO; JAX tests run on the CPU (`tests/conftest.py`) |

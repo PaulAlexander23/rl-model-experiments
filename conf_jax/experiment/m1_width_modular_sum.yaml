@@ -1,0 +1,12 @@
+# @package _global_
+# M1: width needed per architecture at each level of modular_sum (depth 1, 3 seeds vmapped).
+defaults:
+  - override /task: modular_sum
+experiment: m1_width_modular_sum
+task:
+  total_timesteps: 8_000_000
+hydra:
+  sweeper:
+    params:
+      model: mlp,framestack,lru,gru,lstm,transformer
+      model.width: 8,32,128

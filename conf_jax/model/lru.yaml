@@ -1,0 +1,6 @@
+name: lru
+core: lru
+width: 64
+depth: 1
+memory: 0     # unused: the carry is the memory
+kwargs: {}

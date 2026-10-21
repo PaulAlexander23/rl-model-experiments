@@ -1,0 +1,4 @@
+name: noisy_cartpole
+kwargs: {}
+levels: [0.0, 0.1, 0.2, 0.4]   # observation noise std, in units of the failure thresholds
+total_timesteps: 10_000_000

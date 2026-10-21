@@ -1,0 +1,12 @@
+# @package _global_
+# M1: width needed per architecture at each level of noisy_cartpole (depth 1, 3 seeds vmapped).
+defaults:
+  - override /task: noisy_cartpole
+experiment: m1_width_noisy_cartpole
+task:
+  total_timesteps: 5_000_000
+hydra:
+  sweeper:
+    params:
+      model: mlp,framestack,lru,gru,lstm,transformer
+      model.width: 8,32,128

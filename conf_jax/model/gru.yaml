@@ -1,0 +1,6 @@
+name: gru
+core: gru
+width: 64
+depth: 1
+memory: 0     # unused: the carry is the memory
+kwargs: {}

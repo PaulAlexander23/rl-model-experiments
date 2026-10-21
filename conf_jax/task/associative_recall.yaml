@@ -1,0 +1,4 @@
+name: associative_recall
+kwargs: {}
+levels: [2, 4, 8, 16]          # key-value pairs to store (2 bits each)
+total_timesteps: 10_000_000
