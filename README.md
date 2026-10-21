@@ -19,7 +19,9 @@ tracking)? Environment, rollout and PPO update are compiled into one XLA program
 seeds and difficulty levels (~200-600k env steps/s on a GTX 1080, vs 0.4-4k for SB3 recurrent PPO).
 
 * Background, hypotheses and plan: [docs/memory-background.md](docs/memory-background.md)
-* Results and conclusions: [docs/memory-findings.md](docs/memory-findings.md)
+* Results and conclusions: [docs/memory-findings.md](docs/memory-findings.md). Headline: the kind of
+  partial observability picks the architecture (transformer for recall, gated RNN for belief
+  tracking, reach rather than width for long delays); width 8-32 suffices in most passing cells.
 
 ## Setup
 

@@ -110,7 +110,25 @@ observation (an MDP version), used to check that a task is learnable at all.
 
 ### Pilot findings that shaped the setup
 
-PILOT_PLACEHOLDER
+* **Throughput.** 12 runs (3 seeds × 4 levels) `vmap`-ped on the GTX 1080 reach 2–3.7 M env
+  steps/s for MLPs, about 1–2 M for the LRU, 0.2–0.8 M for LSTM/GRU and 0.1–0.8 M for the transformer
+  (falling with width; full table in each `results/m1_width_*.md`). SB3 recurrent PPO in Part 1 ran at
+  0.4–4 k steps/s, so this is 100–1000× faster, and a 6-model × 3-width × 12-run M1 sweep at 5–8 M
+  steps per run (1–1.7 billion env steps in total) takes about an hour.
+* **No entropy bonus.** With the usual `ent_coef=0.01`, `modular_sum` could not be learned even
+  by an MLP *given the answer* in its observation (the oracle). Each step's reward is 1/32, and the
+  entropy term (0.01 × ~2 nats per step) outweighed the advantage signal. `ent_coef=0` fixed it.
+  Every reward here is ≤ 1 per episode, so exploration comes from the stochastic policy alone.
+* **More gradient steps per sample.** The SB3-style setting (256 envs, 4 minibatches, lr 3e-4)
+  learned too slowly to fit an hour's budget. 128 envs × 128 steps with 16 minibatches of 64-step
+  sequences and lr 1e-3 (annealed) solved the pilot levels 2–4× sooner. Tuned on GRU-64, then frozen
+  for every model; the transformer did not need a lower lr here, unlike Part 1.
+* **Pilot sanity checks** (GRU-64, 2 M steps): CartPole noise 0 → 1.0, noise 0.2 → 0.87;
+  `hidden_regime` q=1 → 1.0, q=0.3 → 0.97. At width 64 GRU, LSTM and LRU all solved parity and
+  recall with 2 pairs, and none passed mod-3 or 4 pairs, which set the levels.
+* **Grid.** Widths {8, 32, 128} (one factor of 4 apart) at depth 1 is what fits an hour once the
+  w128 transformer (about 900 s per job) is included; the headline "smallest width" is therefore
+  only resolved to a factor of 4.
 
 ## 5. Plan
 
