@@ -105,3 +105,7 @@ model.learn(1_000_000, callback=HybridDeviceCallback("cpu", "cuda", strategy="mi
 | GitHub Actions | `.github/workflows/ci.yml` runs the same checks (GPU tests skip without CUDA) |
 | Hydra | configuration + sweeps (joblib launcher for parallel runs) |
 | JAX + Flax + Optax | Part 2: compiled env + PPO; JAX tests run on the CPU (`tests/conftest.py`) |
+
+## License
+
+MIT, see [LICENSE](LICENSE).
