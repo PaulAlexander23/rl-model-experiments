@@ -3,6 +3,8 @@ name = "rl-experiments"
 version = "0.1.0"
 description = "PPO architecture experiments (shared vs split actor-critic, LSTM/GRU/Transformer) and CPU/GPU device strategies with Stable-Baselines3."
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "torch>=2.6",
